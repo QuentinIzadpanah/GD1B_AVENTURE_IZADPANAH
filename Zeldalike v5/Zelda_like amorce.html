@@ -1,0 +1,982 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <title>Making your first Phaser 3 Game - Part 10</title>
+    <script src="//cdn.jsdelivr.net/npm/phaser@3.55.2/dist/phaser.min.js"></script>
+    <style type="text/css">
+        body {
+            margin: 0;
+        }
+    </style>
+</head>
+
+<body>
+
+    <script type="text/javascript">
+
+
+        class scene0 extends Phaser.Scene {
+            constructor() {
+                super("scene0");
+            }
+
+            preload() {
+                this.load.image('Start screen', 'assets/Start screen v4$.png');
+                this.load.image('Snow v2', 'assets/Snow v2.png');
+            }
+
+            create() {
+                this.add.image(512, 512, 'Start screen');
+
+                this.input.on('pointerup', function (pointer) {
+
+                    this.scene.start('scene1');
+
+                }, this);
+            }
+
+        };
+
+        class scene1 extends Phaser.Scene {
+            constructor() {
+                super("scene1");
+            }
+
+            preload() {
+
+                this.load.image('ground', 'assets/arbre neige v2.png');
+                this.load.image('Paillasson', 'assets/Paillasson.png');
+                this.load.image('Snow v2', 'assets/Snow v2.png');
+                this.load.image('star', 'assets/star.png');
+                this.load.spritesheet('Ennemi', 'assets/Ennemi.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Bonhommedeneige4', 'assets/Bonhommedeneige4.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Bonhommedeneige3', 'assets/Bonhommedeneige3.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Bonhommedeneige2', 'assets/Bonhommedeneige2.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Bonhommedeneige', 'assets/Bonhommedeneige.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Barredevie', 'assets/Barre de vie.png', { frameWidth: 64, frameHeight: 64 });
+                this.load.tilemapTiledJSON("Tuto", "assets/Tuto.json");
+                this.load.image("tile set zelda like", "assets/Tile set zelda like.png");
+            }
+
+            create() {
+                
+
+                this.score = 0;
+                // chargement de la carte
+                const carteDuNiveau = this.add.tilemap("Tuto");
+
+                // chargement du jeu de tuiles
+                const tileset = carteDuNiveau.addTilesetImage(
+                    "Tile set zelda like",
+                    "tile set zelda like"
+                );
+
+                // chargement du calque calque_background_2
+                const Background = carteDuNiveau.createLayer(
+                    "Plancheh",
+                    tileset
+                );
+
+                // chargement du calque calque_plateformes
+                const Bordel = carteDuNiveau.createLayer(
+                    "Bordel",
+                    tileset
+                );
+
+
+                // définition des tuiles de plateformes qui sont solides
+                // utilisation de la propriété estSolide
+                Bordel.setCollisionByProperty({ estSolide: true });
+
+                // The player and its settings
+
+                this.player = this.physics.add.sprite(48, 50, 'Bonhommedeneige');
+
+
+                //  The platforms group contains the ground and the 2 ledges we can jump on
+                this.platforms = this.physics.add.staticGroup();
+
+                //  Player physics properties. Give the little guy a slight bounce.
+                this.player.setBounce(0.2);
+                this.player.setCollideWorldBounds(true);
+
+                //  Our player animations, turning, walking left and walking right.
+                this.anims.create({
+                    key: 'left',
+                    frames: this.anims.generateFrameNumbers('Bonhommedeneige4', { start: 0, end: 7 }),
+                    frameRate: 15,
+                    repeat: -1
+                });
+
+                this.anims.create({
+                    key: 'turn',
+                    frames: [{ key: 'Bonhommedeneige', frame: 0 }],
+                    frameRate: 20
+                });
+
+                this.anims.create({
+                    key: 'right',
+                    frames: this.anims.generateFrameNumbers('Bonhommedeneige2', { start: 0, end: 7 }),
+                    frameRate: 15,
+                    repeat: -1
+                });
+
+                this.anims.create({
+                    key: 'up',
+                    frames: this.anims.generateFrameNumbers('Bonhommedeneige3', { start: 0, end: 7 }),
+                    frameRate: 15,
+                    repeat: -1
+                });
+                this.anims.create({
+                    key: 'down',
+                    frames: this.anims.generateFrameNumbers('Bonhommedeneige', { start: 0, end: 7 }),
+                    frameRate: 15,
+                    repeat: -1
+                });
+                this.anims.create({
+                    key: 'turn',
+                    frames: this.anims.generateFrameNumbers('Ennemi', { start: 0, end: 4 }),
+                    frameRate: 15
+                });
+
+                //  Input Events
+                this.cursors = this.input.keyboard.createCursorKeys();
+                this.paddle = { A: false, B: false, up: false, down: false };
+                if (this.paddle.A) {
+
+                }
+
+                //  Some stars to collect, 12 in total, evenly spaced 70 pixels apart along the x axis
+                this.Paillasson = this.physics.add.sprite(45, 210);
+
+
+                //this.coordoneY = this.add.text(60, 60, this.player.y, { fontSize: '32px', fill: '#000' });
+                //this.coordoneX = this.add.text(20, 20, this.player.x, { fontSize: '32px', fill: '#000' });
+
+                //  Collide the player and the stars with the platforms
+                this.physics.add.collider(this.player, this.platforms);
+                this.physics.add.collider(this.Paillasson, this.platforms);
+
+                // ajout d'une collision entre le joueur et le calque plateformes
+                this.physics.add.collider(this.player, Bordel);
+
+
+
+                //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
+                this.physics.add.overlap(this.player, this.Paillasson, this.collectStar, null, this);
+
+                this.physics.add.collider(this.player, this.Ennemi, hitEnnemi, null, this);
+
+                this.physics.world.setBounds(0, 0, 1024, 1024);
+                this.cameras.main.setBounds(0, 0, 1024, 1024);
+                this.cameras.main.startFollow(this.player);
+                this.cameras.main.setZoom(2);
+
+
+
+
+            }
+
+            update() {
+                //this.coordoneY.setText(this.player.y);
+                //this.coordoneX.setText(this.player.x);
+
+                if (this.gameOver) {
+                    return;
+                }
+
+
+                //Déplacement vertical
+                if (this.cursors.up.isDown) {
+                    this.player.anims.play('up', true); //et animation => haut
+                    if (this.cursors.down.isDown) {
+                        this.player.setVelocityY(0);
+                    }
+                    else {
+                        if (this.player.body.velocity.x != 0) {
+                            this.player.setVelocityY(-200);
+                        } else {
+                            this.player.setVelocityY(-300);
+                        }
+                    }
+                }
+                else if (this.cursors.down.isDown) {
+                    this.player.anims.play('down', true); //et animation => bas
+                    if (this.player.body.velocity.x != 0) {
+                        this.player.setVelocityY(200);
+                    } else {
+                        this.player.setVelocityY(300);
+                    }
+                }
+                else { this.player.setVelocityY(0); }
+                //Déplacement horizontal
+                if (this.cursors.left.isDown) {
+                    this.player.anims.play('left', true); //et animation => gauche
+                    if (this.cursors.right.isDown) {
+                        this.player.setVelocityX(0);
+                    }
+                    else {
+                        if (this.player.body.velocity.y != 0) {
+                            this.player.setVelocityX(-200);
+                        } else {
+                            this.player.setVelocityX(-300);
+                        }
+                    }
+                }
+                else if (this.cursors.right.isDown) {
+                    this.player.anims.play('right', true); //et animation => droite
+                    if (this.player.body.velocity.y != 0) {
+                        this.player.setVelocityX(200);
+                    } else {
+                        this.player.setVelocityX(300);
+                    }
+                }
+                else {
+                    this.player.setVelocityX(0);
+                }
+                if (this.player.body.velocity.y == 0 & this.player.body.velocity.x == 0) {
+                    this.player.anims.play('turn');
+                }
+
+            }
+
+
+            collectStar(player, Paillasson) {
+                this.scene.start('scene2');
+            }
+
+        };
+
+        class scene2 extends Phaser.Scene {
+            constructor() {
+                super("scene2");
+            }
+
+            init(data) {
+                this.score = data.score;
+            }
+
+            preload() {
+                this.load.image('Snow v2', 'assets/Snow v2.png');
+                this.load.image('platform', 'assets/arbre neige v2.png');
+                this.load.image('star', 'assets/star.png');
+                this.load.spritesheet('Barredevie', 'assets/Barre de vie.png', { frameWidth: 64, frameHeight: 64 });
+                this.load.spritesheet('Ennemi', 'assets/Ennemi.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Bonhommedeneige4', 'assets/Bonhommedeneige4.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Bonhommedeneige3', 'assets/Bonhommedeneige3.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Bonhommedeneige2', 'assets/Bonhommedeneige2.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Bonhommedeneige', 'assets/Bonhommedeneige.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.tilemapTiledJSON("tiled zelda like js", "assets/tiled zelda like js.json");
+                this.load.image("tile set zelda like", "assets/Tile set zelda like.png");
+            }
+
+            create() {
+
+
+                const carteDuNiveau = this.add.tilemap("tiled zelda like js");
+
+                // chargement du jeu de tuiles
+                const tileset = carteDuNiveau.addTilesetImage(
+                    "Tile set zelda like",
+                    "tile set zelda like"
+                );
+
+                // chargement du calque calque_background_2
+                const Background = carteDuNiveau.createLayer(
+                    "SOL",
+                    tileset
+                );
+
+                // chargement du calque calque_plateformes
+                const Maison = carteDuNiveau.createLayer(
+                    "Maison",
+                    tileset
+                );
+
+
+                // définition des tuiles de plateformes qui sont solides
+                // utilisation de la propriété estSolide
+                Maison.setCollisionByProperty({ estSolide: true });
+
+
+                //  The platforms group contains the ground and the 2 ledges we can jump on
+                this.platforms = this.physics.add.staticGroup();
+
+
+                // The player and its settings
+                this.player = this.physics.add.sprite(250, 240, 'Bonhommedeneige');
+
+                
+
+                this.player.setBounce(0.2);
+                this.player.setCollideWorldBounds(true);
+
+                //Barre de Vie
+                this.Barrevie = this.physics.add.sprite(300, 300, 'Barre de vie').setScrollFactor(0);
+                //Score
+                this.scoreText = this.add.text(300, 400, 'score: 0', { fontSize: '32px', fill: '#000' }).setScrollFactor(0);
+
+
+                //  Input Events
+                this.cursors = this.input.keyboard.createCursorKeys();
+                this.paddle = { A: false, B: false, up: false, down: false };
+                if (this.paddle.A) {
+
+                }
+
+                //  Some stars to collect, 12 in total, evenly spaced 70 pixels apart along the x axis
+                this.stars = this.physics.add.group({
+                    key: 'star',
+                    repeat: 3,
+                    setXY: { x: 12, y: 0, stepX: 120 }
+                });
+
+                this.stars2 = this.physics.add.group({
+                    key: 'star',
+                    repeat: 3,
+                    setXY: { x: 16, y: 500, stepX: 170 }
+                });
+
+                this.stars.children.iterate(function (child) {
+
+                    //  Give each star a slightly different bounce
+                    child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+
+                }); //chaque étoile va rebondir un peu différemment
+
+                this.bombs = this.physics.add.group();
+                this.Ennemi = this.physics.add.group();
+                this.Ennemi.create(800, 800, 'Ennemi')
+                //  The score
+                this.scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '64px', fill: '#000' });
+
+                //  Collide the player and the stars with the platforms
+                this.physics.add.collider(this.player, this.platforms);
+                this.physics.add.collider(this.stars, this.platforms);
+                this.physics.add.collider(this.Ennemi, this.platforms);
+
+                //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
+                this.physics.add.overlap(this.player, this.stars, this.collectStar, null, this);
+                this.physics.add.overlap(this.player, this.stars2, this.collectStar, null, this);
+                this.physics.add.collider(this.player, Maison);
+
+                this.physics.add.collider(this.player, this.Ennemi, hitEnnemi, null, this);
+
+
+
+                this.Barredevie = this.physics.add.sprite(300, 300, 'Barredevie').setScrollFactor(0);
+                this.anims.create({
+                    key: 'Barredevie0',
+                    frames: [{ key: 'Barredevie', frame: 0 }],
+                    frameRate: 20
+                });
+                this.anims.create({
+                    key: 'Barredevie1',
+                    frames: [{ key: 'Barredevie', frame: 1 }],
+                    frameRate: 20
+                });
+                this.anims.create({
+                    key: 'Barredevie2',
+                    frames: [{ key: 'Barredevie', frame: 2 }],
+                    frameRate: 20
+                });
+                this.anims.create({
+                    key: 'Barredevie3',
+                    frames: [{ key: 'Barredevie', frame: 3 }],
+                    frameRate: 20
+                });
+
+
+
+                this.physics.world.setBounds(0, 0, 1024, 1024);
+                this.cameras.main.setBounds(0, 0, 1024, 1024);
+                this.cameras.main.startFollow(this.player);
+                this.cameras.main.setZoom(2);
+                //this.coordoneY = this.add.text(60, 60, this.player.y, { fontSize: '32px', fill: '#000' });
+                //this.coordoneX = this.add.text(20, 20, this.player.x, { fontSize: '32px', fill: '#000' });
+
+
+            }
+
+            update() {
+                //this.coordoneY.setText(this.player.y);
+                //this.coordoneX.setText(this.player.x);
+
+                this.Barredevie.anims.play('Barredevie0');
+                if (this.player.gameOver) {
+                    return;
+                }
+
+
+
+                //Déplacement vertical
+                if (this.cursors.up.isDown) {
+                    this.player.anims.play('up', true); //et animation => gauche
+                    if (this.cursors.down.isDown) {
+                        this.player.setVelocityY(0);
+                    }
+                    else {
+                        if (this.player.body.velocity.x != 0) {
+                            this.player.setVelocityY(-200);
+                        } else {
+                            this.player.setVelocityY(-300);
+                        }
+                    }
+                }
+                else if (this.cursors.down.isDown) {
+                    this.player.anims.play('down', true); //et animation => gauche
+                    if (this.player.body.velocity.x != 0) {
+                        this.player.setVelocityY(200);
+                    } else {
+                        this.player.setVelocityY(300);
+                    }
+                }
+                else { this.player.setVelocityY(0); }
+                //Déplacement horizontal
+                if (this.cursors.left.isDown) {
+                    this.player.anims.play('left', true); //et animation => gauche
+                    if (this.cursors.right.isDown) {
+                        this.player.setVelocityX(0);
+                    }
+                    else {
+                        if (this.player.body.velocity.y != 0) {
+                            this.player.setVelocityX(-200);
+                        } else {
+                            this.player.setVelocityX(-300);
+                        }
+                    }
+                }
+                else if (this.cursors.right.isDown) {
+                    this.player.anims.play('right', true); //et animation => gauche
+                    if (this.player.body.velocity.y != 0) {
+                        this.player.setVelocityX(200);
+                    } else {
+                        this.player.setVelocityX(300);
+                    }
+                }
+                else {
+                    this.player.setVelocityX(0);
+                }
+                if (this.player.body.velocity.y == 0 & this.player.body.velocity.x == 0) {
+                    this.player.anims.play('turn');
+                }
+                if (this.player.x >= 448 && this.player.x <= 512 && this.player.y >= 992 && this.player.y <= 1024) {
+                    this.scene.start('scene3');
+                }
+
+            }
+
+            collectStar(player, star) {
+                star.disableBody(true, true); // l’étoile disparaît
+                this.score += 10; //augmente le score de 10
+                this.scoreText.setText('Score: ' + this.score); //met à jour l’affichage du score
+                if (this.stars.countActive(true) === 0) {// si toutes les étoiles sont prises
+                    this.stars.children.iterate(function (child) {
+                        child.enableBody(true, child.x, 0, true, true);
+                    }); // on les affiche toutes de nouveau
+
+
+
+                    var Ennemi = this.Ennemi.create(x, 16, 'Ennemi');
+                    Ennemi.setBounce(1);
+                    Ennemi.setCollideWorldBounds(true);
+                    Ennemi.setVelocity(Phaser.Math.Between(-200, 200), 20);
+                    Ennemi.allowGravity = false; //elle n’est pas soumise à la gravité
+                }
+
+            }
+
+        };
+
+
+        class scene3 extends Phaser.Scene {
+            constructor() {
+                super("scene3");
+            }
+            preload() {
+
+                this.load.image('ground', 'assets/arbre neige v2.png');
+                this.load.image('Jeton_Glace', 'assets/Jeton Glace.png');
+                this.load.image('Snow v2', 'assets/Snow v2.png');
+                this.load.image('star', 'assets/star.png');
+                this.load.spritesheet('Ennemi', 'assets/Ennemi.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Bonhommedeneige4', 'assets/Bonhommedeneige4.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Bonhommedeneige3', 'assets/Bonhommedeneige3.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Bonhommedeneige2', 'assets/Bonhommedeneige2.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Bonhommedeneige', 'assets/Bonhommedeneige.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Barredevie', 'assets/Barre de vie.png', { frameWidth: 64, frameHeight: 64 });
+                this.load.tilemapTiledJSON("tiled zelda like 3", "assets/tiled zelda like 3.json");
+                this.load.image("tile set zelda like", "assets/Tile set zelda like.png");
+            }
+
+            create() {
+
+
+                this.score = 0;
+                // chargement de la carte
+                const carteDuNiveau = this.add.tilemap("tiled zelda like 3");
+
+                // chargement du jeu de tuiles
+                const tileset = carteDuNiveau.addTilesetImage(
+                    "Tile set zelda like",
+                    "tile set zelda like"
+                );
+
+                // chargement du calque calque_background_2
+                const Background = carteDuNiveau.createLayer(
+                    "Sol 3",
+                    tileset
+                );
+
+                // chargement du calque calque_plateformes
+                const Arbre = carteDuNiveau.createLayer(
+                    "Arbre",
+                    tileset
+                );
+
+
+                // définition des tuiles de plateformes qui sont solides
+                // utilisation de la propriété estSolide
+                Arbre.setCollisionByProperty({ estSolide: true });
+
+                // The player and its settings
+
+                this.player = this.physics.add.sprite(512, 50, 'Bonhommedeneige');
+
+
+                //  The platforms group contains the ground and the 2 ledges we can jump on
+                this.platforms = this.physics.add.staticGroup();
+
+                //  Player physics properties. Give the little guy a slight bounce.
+                this.player.setBounce(0.2);
+                this.player.setCollideWorldBounds(true);
+
+                //  Our player animations, turning, walking left and walking right.
+                this.anims.create({
+                    key: 'left',
+                    frames: this.anims.generateFrameNumbers('Bonhommedeneige4', { start: 0, end: 7 }),
+                    frameRate: 15,
+                    repeat: -1
+                });
+
+                this.anims.create({
+                    key: 'turn',
+                    frames: [{ key: 'Bonhommedeneige', frame: 0 }],
+                    frameRate: 20
+                });
+
+                this.anims.create({
+                    key: 'right',
+                    frames: this.anims.generateFrameNumbers('Bonhommedeneige2', { start: 0, end: 7 }),
+                    frameRate: 15,
+                    repeat: -1
+                });
+
+                this.anims.create({
+                    key: 'up',
+                    frames: this.anims.generateFrameNumbers('Bonhommedeneige3', { start: 0, end: 7 }),
+                    frameRate: 15,
+                    repeat: -1
+                });
+                this.anims.create({
+                    key: 'down',
+                    frames: this.anims.generateFrameNumbers('Bonhommedeneige', { start: 0, end: 7 }),
+                    frameRate: 15,
+                    repeat: -1
+                });
+                this.anims.create({
+                    key: 'turn',
+                    frames: this.anims.generateFrameNumbers('Ennemi', { start: 0, end: 4 }),
+                    frameRate: 15
+                });
+
+                //  Input Events
+                this.cursors = this.input.keyboard.createCursorKeys();
+                this.paddle = { A: false, B: false, up: false, down: false };
+                if (this.paddle.A) {
+
+                }
+
+
+                this.Jeton_Glace = this.physics.add.sprite(816, 880, 'Jeton_Glace');
+
+
+                //this.coordoneY = this.add.text(60, 60, this.player.y, { fontSize: '32px', fill: '#000' });
+                //this.coordoneX = this.add.text(20, 20, this.player.x, { fontSize: '32px', fill: '#000' });
+
+                //  Collide the player and the stars with the platforms
+                this.physics.add.collider(this.player, this.platforms);
+                this.physics.add.collider(this.Jeton_Glace, this.platforms);
+
+                // ajout d'une collision entre le joueur et le calque plateformes
+                this.physics.add.collider(this.player, Arbre);
+
+
+
+                //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
+                this.physics.add.overlap(this.player, this.Jeton_Glace, this.collectStar, null, this);
+
+                this.physics.add.collider(this.player, this.Ennemi, hitEnnemi, null, this);
+
+                this.physics.world.setBounds(0, 0, 1024, 1024);
+                this.cameras.main.setBounds(0, 0, 1024, 1024);
+                this.cameras.main.startFollow(this.player);
+                this.cameras.main.setZoom(2);
+
+
+
+
+            }
+
+            update() {
+                //this.coordoneY.setText(this.player.y);
+                //this.coordoneX.setText(this.player.x);
+
+                if (this.gameOver) {
+                    return;
+                }
+
+
+                //Déplacement vertical
+                if (this.cursors.up.isDown) {
+                    this.player.anims.play('up', true); //et animation => haut
+                    if (this.cursors.down.isDown) {
+                        this.player.setVelocityY(0);
+                    }
+                    else {
+                        if (this.player.body.velocity.x != 0) {
+                            this.player.setVelocityY(-200);
+                        } else {
+                            this.player.setVelocityY(-300);
+                        }
+                    }
+                }
+                else if (this.cursors.down.isDown) {
+                    this.player.anims.play('down', true); //et animation => bas
+                    if (this.player.body.velocity.x != 0) {
+                        this.player.setVelocityY(200);
+                    } else {
+                        this.player.setVelocityY(300);
+                    }
+                }
+                else { this.player.setVelocityY(0); }
+                //Déplacement horizontal
+                if (this.cursors.left.isDown) {
+                    this.player.anims.play('left', true); //et animation => gauche
+                    if (this.cursors.right.isDown) {
+                        this.player.setVelocityX(0);
+                    }
+                    else {
+                        if (this.player.body.velocity.y != 0) {
+                            this.player.setVelocityX(-200);
+                        } else {
+                            this.player.setVelocityX(-300);
+                        }
+                    }
+                }
+                else if (this.cursors.right.isDown) {
+                    this.player.anims.play('right', true); //et animation => droite
+                    if (this.player.body.velocity.y != 0) {
+                        this.player.setVelocityX(200);
+                    } else {
+                        this.player.setVelocityX(300);
+                    }
+                }
+                else {
+                    this.player.setVelocityX(0);
+                }
+                if (this.player.body.velocity.y == 0 & this.player.body.velocity.x == 0) {
+                    this.player.anims.play('turn');
+                }
+                if (this.player.x >= 448 && this.player.x <= 512 && this.player.y >= 0 && this.player.y <= 32) {
+                    this.scene.start('scene4');
+                }
+
+            }
+
+            collectStar(player, Jeton_Glace) {
+                Jeton_Glace.disableBody(true, true);   
+            }
+
+
+            
+
+        }
+        class scene4 extends Phaser.Scene {
+            constructor() {
+                super("scene4");
+            }
+
+            init(data) {
+                this.score = data.score;
+            }
+
+            preload() {
+                this.load.image('Snow v2', 'assets/Snow v2.png');
+                this.load.image('platform', 'assets/arbre neige v2.png');
+                this.load.image('star', 'assets/star.png');
+                this.load.spritesheet('Barredevie', 'assets/Barre de vie.png', { frameWidth: 64, frameHeight: 64 });
+                this.load.spritesheet('Ennemi', 'assets/Ennemi.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Bonhommedeneige4', 'assets/Bonhommedeneige4.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Bonhommedeneige3', 'assets/Bonhommedeneige3.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Bonhommedeneige2', 'assets/Bonhommedeneige2.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.spritesheet('Bonhommedeneige', 'assets/Bonhommedeneige.png', { frameWidth: 32, frameHeight: 32 });
+                this.load.tilemapTiledJSON("tiled zelda like js", "assets/tiled zelda like js.json");
+                this.load.image("tile set zelda like", "assets/Tile set zelda like.png");
+            }
+
+            create() {
+
+
+                const carteDuNiveau = this.add.tilemap("tiled zelda like js");
+
+                // chargement du jeu de tuiles
+                const tileset = carteDuNiveau.addTilesetImage(
+                    "Tile set zelda like",
+                    "tile set zelda like"
+                );
+
+                // chargement du calque calque_background_2
+                const Background = carteDuNiveau.createLayer(
+                    "SOL",
+                    tileset
+                );
+
+                // chargement du calque calque_plateformes
+                const Maison = carteDuNiveau.createLayer(
+                    "Maison",
+                    tileset
+                );
+
+
+                // définition des tuiles de plateformes qui sont solides
+                // utilisation de la propriété estSolide
+                Maison.setCollisionByProperty({ estSolide: true });
+
+
+                //  The platforms group contains the ground and the 2 ledges we can jump on
+                this.platforms = this.physics.add.staticGroup();
+
+
+                // The player and its settings
+                if(this.tuto =0){
+                    this.player = this.physics.add.sprite(250, 240, 'Bonhommedeneige');
+                    this.tuto += 1;
+                }
+                else {
+                    this.player = this.physics.add.sprite(510, 960, 'Bonhommedeneige');
+                }
+                
+
+                this.player.setBounce(0.2);
+                this.player.setCollideWorldBounds(true);
+
+                //Barre de vie
+                this.Barrevie = this.physics.add.sprite(50, 550, 'Barre de vie').setScrollFactor(0);
+                //Score
+                this.scoreText = this.add.text(300, 400, 'score: 0', { fontSize: '32px', fill: '#000' }).setScrollFactor(0);
+
+
+                //  Input Events
+                this.cursors = this.input.keyboard.createCursorKeys();
+                this.paddle = { A: false, B: false, up: false, down: false };
+                if (this.paddle.A) {
+
+                }
+
+                //  Some stars to collect, 12 in total, evenly spaced 70 pixels apart along the x axis
+                this.stars = this.physics.add.group({
+                    key: 'star',
+                    repeat: 3,
+                    setXY: { x: 12, y: 0, stepX: 120 }
+                });
+
+                this.stars2 = this.physics.add.group({
+                    key: 'star',
+                    repeat: 3,
+                    setXY: { x: 16, y: 500, stepX: 170 }
+                });
+
+                this.stars.children.iterate(function (child) {
+
+                    //  Give each star a slightly different bounce
+                    child.setBounceY(Phaser.Math.FloatBetween(0.4, 0.8));
+
+                }); //chaque étoile va rebondir un peu différemment
+
+                this.bombs = this.physics.add.group();
+                this.Ennemi = this.physics.add.group();
+                this.Ennemi.create(512, 512, 'Ennemi')
+                //  The score
+                this.scoreText = this.add.text(16, 16, 'score: 0', { fontSize: '64px', fill: '#000' });
+
+                //  Collide the player and the stars with the platforms
+                this.physics.add.collider(this.player, this.platforms);
+                this.physics.add.collider(this.stars, this.platforms);
+                this.physics.add.collider(this.Ennemi, this.platforms);
+
+                //  Checks to see if the player overlaps with any of the stars, if he does call the collectStar function
+                this.physics.add.overlap(this.player, this.stars, this.collectStar, null, this);
+                this.physics.add.overlap(this.player, this.stars2, this.collectStar, null, this);
+                this.physics.add.collider(this.player, Maison);
+
+                this.physics.add.collider(this.player, this.Ennemi, hitEnnemi, null, this);
+
+                //Barre de vie animation
+
+                this.Barredevie = this.physics.add.sprite(300, 300, 'Barredevie').setScrollFactor(0);
+                this.anims.create({
+                    key: 'Barredevie0',
+                    frames: [{ key: 'Barredevie', frame: 0 }],
+                    frameRate: 20
+                });
+                this.anims.create({
+                    key: 'Barredevie1',
+                    frames: [{ key: 'Barredevie', frame: 1 }],
+                    frameRate: 20
+                });
+                this.anims.create({
+                    key: 'Barredevie2',
+                    frames: [{ key: 'Barredevie', frame: 2 }],
+                    frameRate: 20
+                });
+                this.anims.create({
+                    key: 'Barredevie3',
+                    frames: [{ key: 'Barredevie', frame: 3 }],
+                    frameRate: 20
+                });
+
+
+                //caméra qui suit le joueur
+                this.physics.world.setBounds(0, 0, 1024, 1024);
+                this.cameras.main.setBounds(0, 0, 1024, 1024);
+                this.cameras.main.startFollow(this.player);
+                this.cameras.main.setZoom(2);
+                //this.coordoneY = this.add.text(60, 60, this.player.y, { fontSize: '32px', fill: '#000' });
+                //this.coordoneX = this.add.text(20, 20, this.player.x, { fontSize: '32px', fill: '#000' });
+
+
+            }
+
+            update() {
+                //this.coordoneY.setText(this.player.y);
+                //this.coordoneX.setText(this.player.x);
+
+                //Barre de vie
+                this.Barredevie.anims.play('Barredevie0');
+                if (this.player.gameOver) {
+                    return;
+                }
+
+
+
+                //Déplacement vertical
+                if (this.cursors.up.isDown) {
+                    this.player.anims.play('up', true); //et animation => gauche
+                    if (this.cursors.down.isDown) {
+                        this.player.setVelocityY(0);
+                    }
+                    else {
+                        if (this.player.body.velocity.x != 0) {
+                            this.player.setVelocityY(-200);
+                        } else {
+                            this.player.setVelocityY(-300);
+                        }
+                    }
+                }
+                else if (this.cursors.down.isDown) {
+                    this.player.anims.play('down', true); //et animation => gauche
+                    if (this.player.body.velocity.x != 0) {
+                        this.player.setVelocityY(200);
+                    } else {
+                        this.player.setVelocityY(300);
+                    }
+                }
+                else { this.player.setVelocityY(0); }
+                //Déplacement horizontal
+                if (this.cursors.left.isDown) {
+                    this.player.anims.play('left', true); //et animation => gauche
+                    if (this.cursors.right.isDown) {
+                        this.player.setVelocityX(0);
+                    }
+                    else {
+                        if (this.player.body.velocity.y != 0) {
+                            this.player.setVelocityX(-200);
+                        } else {
+                            this.player.setVelocityX(-300);
+                        }
+                    }
+                }
+                else if (this.cursors.right.isDown) {
+                    this.player.anims.play('right', true); //et animation => gauche
+                    if (this.player.body.velocity.y != 0) {
+                        this.player.setVelocityX(200);
+                    } else {
+                        this.player.setVelocityX(300);
+                    }
+                }
+                else {
+                    this.player.setVelocityX(0);
+                }
+                if (this.player.body.velocity.y == 0 & this.player.body.velocity.x == 0) {
+                    this.player.anims.play('turn');
+                }
+                if (this.player.x >= 448 && this.player.x <= 512 && this.player.y >= 992 && this.player.y <= 1024) {
+                    this.scene.start('scene3');
+                }
+
+            }
+
+            collectStar(player, star) {
+                star.disableBody(true, true); // l’étoile disparaît
+                this.score += 10; //augmente le score de 10
+                this.scoreText.setText('Score: ' + this.score); //met à jour l’affichage du score
+                if (this.stars.countActive(true) === 0) {// si toutes les étoiles sont prises
+                    this.stars.children.iterate(function (child) {
+                        child.enableBody(true, child.x, 0, true, true);
+                    }); // on les affiche toutes de nouveau
+
+
+
+                    var Ennemi = this.Ennemi.create(x, 16, 'Ennemi');
+                    Ennemi.setBounce(1);
+                    Ennemi.setCollideWorldBounds(true);
+                    Ennemi.setVelocity(Phaser.Math.Between(-200, 200), 20);
+                    Ennemi.allowGravity = false; //elle n’est pas soumise à la gravité
+                }
+
+            }
+
+        };
+
+        var config = {
+            type: Phaser.CANVAS,
+            width: 1024,
+            height: 1024,
+            physics: {
+                default: 'arcade',
+                arcade: {
+                    gravity: false,
+                    debug: false
+                }
+            },
+            scene: [scene0, scene1, scene2, scene3,scene4]
+        };
+
+
+        new Phaser.Game(config);
+
+        function hitEnnemi(player, Ennemi) {
+            player.setTint(0xff0000);
+            player.anims.play('turn');
+            const myTimeout = setTimeout(1000);
+            //player.gameOver = true;
+        }
+
+    </script>
+
+</body>
+
+</html>
